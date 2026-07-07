@@ -2,13 +2,13 @@ JD_EXTRACTION_PROMPT = """
 You are a job description analyst. Extract structured information from the following job description.
 
 Return ONLY valid JSON with this exact structure:
-{
+{{
   "required_skills": ["skill1", "skill2"],
   "preferred_skills": ["skill1", "skill2"],
   "responsibilities": ["responsibility1", "responsibility2"],
   "soft_skills": ["skill1", "skill2"],
   "domain_keywords": ["keyword1", "keyword2"]
-}
+}}
 
 Job Description:
 {job_description}
