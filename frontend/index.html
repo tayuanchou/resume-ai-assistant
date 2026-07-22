@@ -1,0 +1,433 @@
+<title>Resume AI Assistant</title>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #fafafa;
+  }
+
+  h1 {
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    color: #555;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .input-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 260px;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+  }
+
+  button#analyzeBtn {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    background: #2563eb;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button#analyzeBtn:hover {
+    background: #1d4ed8;
+  }
+
+  button#analyzeBtn:disabled {
+    background: #93b4f0;
+    cursor: not-allowed;
+  }
+
+  #message {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 6px;
+    display: none;
+  }
+
+  #message.error {
+    display: block;
+    background: #fdecea;
+    color: #7a1f1f;
+    border: 1px solid #f3b3ae;
+  }
+
+  #message.loading {
+    display: block;
+    background: #eef2ff;
+    color: #333;
+    border: 1px solid #c3cdf5;
+  }
+
+  #results {
+    margin-top: 32px;
+    display: none;
+  }
+
+  .section {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .section h2 {
+    margin-top: 0;
+    font-size: 18px;
+  }
+
+  .score {
+    font-size: 40px;
+    font-weight: 700;
+    color: #2563eb;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .tag {
+    background: #eef2ff;
+    color: #333;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid #c3cdf5;
+  }
+
+  .tag.missing {
+    background: #fdecea;
+    border-color: #f3b3ae;
+    color: #7a1f1f;
+  }
+
+  .tag.weak {
+    background: #fff7e6;
+    border-color: #f0d38a;
+    color: #7a5b1f;
+  }
+
+  .empty-note {
+    color: #888;
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  .bullet-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  .bullet-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .bullet-label {
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 2px;
+  }
+
+  .bullet-original {
+    margin-bottom: 8px;
+  }
+
+  .bullet-problem {
+    margin-bottom: 8px;
+    color: #7a5b1f;
+  }
+
+  .bullet-improved {
+    color: #1f6b3a;
+  }
+
+  #tailoredSummary {
+    white-space: pre-wrap;
+  }
+</style>
+
+<h1>Resume AI Assistant</h1>
+<p class="subtitle">
+  Paste your resume and a job description to see how well they match, what
+  skills you're missing, and how to improve your bullet points and summary.
+</p>
+
+<div class="input-grid">
+  <div>
+    <label for="resumeText">Resume Text</label>
+    <textarea id="resumeText" placeholder="Paste your resume text here..."></textarea>
+  </div>
+  <div>
+    <label for="jobDescription">Job Description</label>
+    <textarea id="jobDescription" placeholder="Paste the job description here..."></textarea>
+  </div>
+</div>
+
+<button id="analyzeBtn">Analyze Resume</button>
+
+<div id="message"></div>
+
+<div id="results">
+  <div class="section">
+    <h2>Match Score</h2>
+    <div class="score" id="matchScore">--</div>
+  </div>
+
+  <div class="section">
+    <h2>Required Skills</h2>
+    <ul class="tags" id="requiredSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Preferred Skills</h2>
+    <ul class="tags" id="preferredSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Matched Skills</h2>
+    <ul class="tags" id="matchedSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Missing Skills</h2>
+    <ul class="tags" id="missingSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Weak Skills</h2>
+    <ul class="tags" id="weakSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Responsibilities</h2>
+    <ul class="tags" id="responsibilities"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Soft Skills</h2>
+    <ul class="tags" id="softSkills"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Domain Keywords</h2>
+    <ul class="tags" id="domainKeywords"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Bullet Suggestions</h2>
+    <div id="bulletSuggestions"></div>
+  </div>
+
+  <div class="section">
+    <h2>Tailored Summary</h2>
+    <p id="tailoredSummary"></p>
+  </div>
+</div>
+
+<script>
+  const API_URL = "http://127.0.0.1:8000/analyze";
+
+  const resumeTextEl = document.getElementById("resumeText");
+  const jobDescriptionEl = document.getElementById("jobDescription");
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  const messageEl = document.getElementById("message");
+  const resultsEl = document.getElementById("results");
+
+  function showMessage(text, type) {
+    messageEl.textContent = text;
+    messageEl.className = type; // "error" or "loading"
+  }
+
+  function clearMessage() {
+    messageEl.textContent = "";
+    messageEl.className = "";
+  }
+
+  // Renders a list of strings as tag pills inside a <ul>. If empty, shows a note instead.
+  function renderTags(elementId, items, tagClass) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = "";
+
+    if (!items || items.length === 0) {
+      const note = document.createElement("li");
+      note.className = "empty-note";
+      note.textContent = "None found.";
+      container.appendChild(note);
+      return;
+    }
+
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "tag" + (tagClass ? " " + tagClass : "");
+      li.textContent = item;
+      container.appendChild(li);
+    });
+  }
+
+  function renderBulletSuggestions(suggestions) {
+    const container = document.getElementById("bulletSuggestions");
+    container.innerHTML = "";
+
+    if (!suggestions || suggestions.length === 0) {
+      const note = document.createElement("p");
+      note.className = "empty-note";
+      note.textContent = "No bullet suggestions available.";
+      container.appendChild(note);
+      return;
+    }
+
+    suggestions.forEach((suggestion) => {
+      const card = document.createElement("div");
+      card.className = "bullet-card";
+      card.innerHTML = `
+        <div class="bullet-label">Original</div>
+        <div class="bullet-original">${escapeHtml(suggestion.original)}</div>
+        <div class="bullet-label">Problem</div>
+        <div class="bullet-problem">${escapeHtml(suggestion.problem)}</div>
+        <div class="bullet-label">Improved</div>
+        <div class="bullet-improved">${escapeHtml(suggestion.improved)}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderResults(data) {
+    document.getElementById("matchScore").textContent = data.match_score + " / 100";
+
+    renderTags("requiredSkills", data.jd_keywords.required_skills);
+    renderTags("preferredSkills", data.jd_keywords.preferred_skills);
+    renderTags("responsibilities", data.jd_keywords.responsibilities);
+    renderTags("softSkills", data.jd_keywords.soft_skills);
+    renderTags("domainKeywords", data.jd_keywords.domain_keywords);
+
+    renderTags("matchedSkills", data.skill_match.matched_skills);
+    renderTags("missingSkills", data.skill_match.missing_skills, "missing");
+    renderTags("weakSkills", data.skill_match.weak_skills, "weak");
+
+    renderBulletSuggestions(data.bullet_suggestions);
+
+    document.getElementById("tailoredSummary").textContent = data.tailored_summary;
+
+    resultsEl.style.display = "block";
+  }
+
+  async function analyze() {
+    const resumeText = resumeTextEl.value.trim();
+    const jobDescription = jobDescriptionEl.value.trim();
+
+    clearMessage();
+    resultsEl.style.display = "none";
+
+    if (!resumeText || !jobDescription) {
+      showMessage("Please fill in both the resume text and job description before analyzing.", "error");
+      return;
+    }
+
+    analyzeBtn.disabled = true;
+    showMessage("Analyzing... this may take a few seconds.", "loading");
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          job_description: jobDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const errorBody = await response.json();
+          detail = errorBody.detail ? ` (${JSON.stringify(errorBody.detail)})` : "";
+        } catch (e) {
+          // ignore parse failure
+        }
+        showMessage(`Server returned an error (status ${response.status})${detail}`, "error");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (
+        typeof data.match_score !== "number" ||
+        !data.jd_keywords ||
+        !data.skill_match ||
+        !Array.isArray(data.bullet_suggestions) ||
+        typeof data.tailored_summary !== "string"
+      ) {
+        showMessage("Received an unexpected response format from the server.", "error");
+        return;
+      }
+
+      clearMessage();
+      renderResults(data);
+    } catch (err) {
+      showMessage(
+        "Could not connect to the backend. Make sure the server is running at http://127.0.0.1:8000.",
+        "error"
+      );
+    } finally {
+      analyzeBtn.disabled = false;
+    }
+  }
+
+  analyzeBtn.addEventListener("click", analyze);
+</script>
